@@ -1,0 +1,35 @@
+---
+# tasks file for Test_ins_apache
+- name: Check and Print Linux version
+  debug: var=ansible_os_family 
+- block: #====Block for RadHat====
+    - name: Install Apache Web Server for RedHat # Установка Апаче на Центос.
+      yum: name=httpd state=latest
+    - name: Start WebServer and make it enable on boot for RedHat # Запуск Апаче на Центос.
+      service: name=httpd state=started enabled=yes
+  when: ansible_os_family == "RedHat"
+
+- block: #====Block for Debian====
+    - name: Install Apache Web Server for Debian # Установка Апаче на Убунту.
+      apt: name=apache2 state=latest
+    - name: Start WebServer and make it enable on boot for Debian # Запуск Апаче на Убунту.
+      service: name=apache2 state=started enabled=yes
+  when: ansible_os_family == "Debian"
+
+- firewalld:
+    port: 80/tcp
+    permanent: yes
+    state: enabled
+
+- name: Copy MyHomePage to Servers # Копирование файлов.
+  copy: src={{ item }} dest={{ destin_folder }} mode=0555
+  loop: # Список items:
+    - css
+    - fonts
+    - img
+    - js
+    - "index.html"
+
+  notify: # Если не установлен Апаче то запускать рестарты.
+    - Restart Apache for RedHat
+    - Restart Apache for Debian

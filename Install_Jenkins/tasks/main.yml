@@ -1,0 +1,46 @@
+---
+# tasks file for Install_Jenkins
+  - name: Install Java
+    yum: name=wget state=latest
+
+  - name: Install Wget
+    yum: name=java-1.8.0-openjdk-devel state=latest
+
+  - name: Repository connection
+    get_url:
+      url: http://pkg.jenkins-ci.org/redhat-stable/jenkins.repo
+      dest: /etc/yum.repos.d/jenkins.repo
+
+# Example action to import a key from a url
+  - rpm_key:
+      state: present
+      key: https://jenkins-ci.org/redhat/jenkins-ci.org.key
+
+  - name: Install Jenkins
+    yum: name=jenkins state=latest
+
+  - firewalld:
+      port: 8080/tcp
+      permanent: yes
+      state: enabled
+
+  - name: Restart service firewalld, in all cases
+    service:
+      name: firewalld
+      state: restarted
+
+  - name: Start Jenkins
+    service: name=jenkins state=started enabled=yes
+  
+  - name: Wait until the file  is present before continuing
+    wait_for:
+      timeout: 400
+      path: /var/lib/jenkins/secrets/initialAdminPassword
+
+  - name: get contents of file
+    command: cat /var/lib/jenkins/secrets/initialAdminPassword
+    register: filename
+    become: true # use case specific option
+  - name: Login code
+    debug:
+      msg: "{{filename.stdout}}"
